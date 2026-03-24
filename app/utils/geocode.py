@@ -1,21 +1,28 @@
-import requests
 import os
 
-KAKAO_KEY = os.getenv("KAKAO_REST_API_KEY")
+import requests
+
 
 def geocode(address):
-    url = "https://dapi.kakao.com/v2/local/search/address.json"
-    headers = {"Authorization": f"KakaoAK " + KAKAO_KEY}
-    params = {"query": address}
-
-    res = requests.get(url, headers=headers, params=params)
-    data = res.json()
-
-    if len(data.get("documents", [])) == 0:
+    kakao_key = os.getenv("KAKAO_REST_API_KEY") or os.getenv("KAKAO_REST_KEY")
+    if not kakao_key or not address:
         return None
 
-    doc = data["documents"][0]
+    response = requests.get(
+        "https://dapi.kakao.com/v2/local/search/address.json",
+        headers={"Authorization": f"KakaoAK {kakao_key}"},
+        params={"query": address},
+        timeout=10,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    documents = data.get("documents", [])
+    if not documents:
+        return None
+
+    document = documents[0]
     return {
-        "lat": float(doc["y"]),
-        "lon": float(doc["x"])
+        "lat": float(document["y"]),
+        "lon": float(document["x"]),
     }
